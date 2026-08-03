@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Player Impact Lab | 2024-25</title>
+    <!-- 1. Include CSS (we will create this file next) -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- 2. Include Chart.js (Library for graphics) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 3. Include PapaParse (Library to read CSV files) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+
+    <header>
+        <div class="logo">NBA Impact Lab</div>
+        <p>2024-25 Season Analytics | Driven by SQL, DuckDB, and JavaScript</p>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- 4. Sidebar for Player Selection -->
+        <aside class="controls">
+            <h2>Select Player</h2>
+            <select id="playerSelect">
+                <option value="">-- Choose a Player --</option>
+            </select>
+        </aside>
+
+        <!-- 5. Chart Canvas Placeholder -->
+        <section class="chart-area">
+            <canvas id="impactChart"></canvas>
+        </section>
+    </main>
+
+    <!-- 6. Include JS (we will create this file last) -->
+    <script src="script.js"></script>
+</body>
+</html>
