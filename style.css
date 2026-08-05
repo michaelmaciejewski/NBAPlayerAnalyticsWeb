@@ -1,49 +1,135 @@
+/* Reset & Page Theme */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #0f172a;
+  color: #f8fafc;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.dashboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Header */
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+header p {
+  color: #94a3b8;
+  font-size: 1rem;
+}
+
+/* Controls Card */
 .controls-card {
   display: flex;
   align-items: center;
   justify-content: space-around;
-  background-color: #1e1e2f;
-  padding: 20px;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  padding: 1.5rem;
   border-radius: 12px;
-  margin-bottom: 25px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
 .player-column {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.75rem;
 }
 
 .player-column h3 {
-  margin: 0 0 5px 0;
-  color: #fff;
-  font-size: 16px;
+  font-size: 1.1rem;
+  color: #f1f5f9;
+  margin-bottom: 0.25rem;
 }
 
 .select-group {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 0.75rem;
 }
 
 .select-group label {
-  color: #ccc;
-  font-size: 14px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  width: 50px;
 }
 
 .select-group select {
-  padding: 8px 12px;
+  padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  background-color: #2b2b40;
-  color: #fff;
-  border: 1px solid #444;
-  font-size: 14px;
-  min-width: 160px;
+  background-color: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #475569;
+  font-size: 0.95rem;
+  min-width: 180px;
+  outline: none;
+  cursor: pointer;
+}
+
+.select-group select:focus {
+  border-color: #38bdf8;
 }
 
 .versus-badge {
-  font-weight: bold;
-  font-size: 22px;
-  color: #ff4757;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #ef4444;
+  background-color: #0f172a;
+  padding: 0.5rem 1rem;
+  border-radius: 50%;
+  border: 1px solid #334155;
+}
+
+/* Chart Container */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.chart-card {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.chart-card h2 {
+  font-size: 1.25rem;
+  color: #f1f5f9;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.chart-container {
+  position: relative;
+  height: 480px;
+  width: 100%;
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+canvas#radarChart {
+  width: 100% !important;
+  height: 100% !important;
 }
