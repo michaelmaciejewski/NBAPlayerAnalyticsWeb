@@ -1,68 +1,49 @@
-/* --- Core Styling --- */
-:root {
-    --bg-dark: #0f172a;
-    --bg-card: #1e293b;
-    --accent: #38bdf8;
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
+.controls-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background-color: #1e1e2f;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 25px;
 }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: var(--bg-dark);
-    color: var(--text-primary);
-    margin: 0;
-    padding: 0;
+.player-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* --- Header --- */
-header {
-    text-align: center;
-    padding: 2rem;
-    background-color: var(--bg-card);
-    border-bottom: 1px solid #334155;
+.player-column h3 {
+  margin: 0 0 5px 0;
+  color: #fff;
+  font-size: 16px;
 }
 
-header h1 { color: var(--accent); margin: 0; font-size: 1.8rem; }
-header p { color: var(--text-secondary); margin-top: 0.5rem; }
-
-/* --- Dashboard Grid Layout --- */
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 280px 1fr; /* Sidebar, Main Chart */
-    gap: 2rem;
-    padding: 2rem;
-    max-width: 1600px;
-    margin: 0 auto;
+.select-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-/* --- Controls Sidebar --- */
-.controls {
-    background-color: var(--bg-card);
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid #334155;
+.select-group label {
+  color: #ccc;
+  font-size: 14px;
 }
 
-.controls h2 { font-size: 1.2rem; color: var(--text-secondary); }
-
-select {
-    width: 100%;
-    padding: 0.75rem;
-    border-radius: 6px;
-    background-color: var(--bg-dark);
-    color: var(--text-primary);
-    border: 1px solid #475569;
-    font-size: 1rem;
-    cursor: pointer;
+.select-group select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  background-color: #2b2b40;
+  color: #fff;
+  border: 1px solid #444;
+  font-size: 14px;
+  min-width: 160px;
 }
 
-/* --- Chart Area --- */
-.chart-area {
-    background-color: var(--bg-card);
-    padding: 2rem;
-    border-radius: 12px;
-    border: 1px solid #334155;
-    position: relative;
-    height: 70vh; /* Adjust height of chart canvas */
+.versus-badge {
+  font-weight: bold;
+  font-size: 22px;
+  color: #ff4757;
 }

@@ -1,40 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NBA Player Impact Lab | 2024-25</title>
-    <!-- 1. Include CSS (we will create this file next) -->
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- 2. Include Chart.js (Library for graphics) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- 3. Include PapaParse (Library to read CSV files) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA Player Impact Lab</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-
+  <div class="dashboard-container">
     <header>
-        <div class="logo">NBA Impact Lab</div>
-        <p>2024-25 Season Analytics | Driven by SQL, DuckDB, and JavaScript</p>
+      <h1>🏀 NBA Player Impact Lab</h1>
+      <p>Head-to-Head Player Analytics Dashboard (2024-25 Season)</p>
     </header>
 
-    <main class="dashboard-grid">
-        <!-- 4. Sidebar for Player Selection -->
-        <aside class="controls">
-            <h2>Select Player</h2>
-            <select id="playerSelect">
-                <option value="">-- Choose a Player --</option>
-            </select>
-        </aside>
+    <!-- Controls Row -->
+    <section class="controls-card">
+      <!-- Player 1 Column -->
+      <div class="player-column">
+        <h3>Player 1 (Blue)</h3>
+        <div class="select-group">
+          <label for="team1-select">Team:</label>
+          <select id="team1-select"></select>
+        </div>
+        <div class="select-group">
+          <label for="player1-select">Player:</label>
+          <select id="player1-select"></select>
+        </div>
+      </div>
 
-        <!-- 5. Chart Canvas Placeholder -->
-        <section class="chart-area">
-            <canvas id="impactChart"></canvas>
-        </section>
-    </main>
+      <div class="versus-badge">VS</div>
 
-    <!-- 6. Include JS (we will create this file last) -->
-    <script src="script.js"></script>
+      <!-- Player 2 Column -->
+      <div class="player-column">
+        <h3>Player 2 (Red)</h3>
+        <div class="select-group">
+          <label for="team2-select">Team:</label>
+          <select id="team2-select"></select>
+        </div>
+        <div class="select-group">
+          <label for="player2-select">Player:</label>
+          <select id="player2-select"></select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Visualizations Container -->
+    <section class="charts-grid">
+      <div class="chart-card">
+        <h2>Skill Profile Radar</h2>
+        <div class="chart-container">
+          <canvas id="radarChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

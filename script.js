@@ -1,95 +1,136 @@
-// Global variables for the Chart and Player Data
-let myChart = null;
-let playerData = [];
+let globalData = [];
+let radarChart = null;
 
-// metrics we will visualize on the chart
-const metrics = ['ppg', 'mpg', 'true_shooting_pct', 'effective_fg_pct', 'three_point_rate'];
-
-// 1. Load and Parse the CSV Data when the page loads
-function loadData() {
-    Papa.parse("transformed_player_metrics.csv", {
-        download: true,
-        header: true,
-        complete: function(results) {
-            console.log("CSV Parsed Successfully:", results.data);
-            playerData = results.data;
-            populateDropdown(results.data);
-        }
-    });
-}
-
-// 2. Populate the Dropdown menu with player names
-function populateDropdown(data) {
-    const select = document.getElementById("playerSelect");
-    
-    // Sort players by name
-    const sortedPlayers = data.sort((a, b) => a.PLAYER_NAME.localeCompare(b.PLAYER_NAME));
-
-    sortedPlayers.forEach(player => {
-        if(player.PLAYER_NAME) { // Ignore any empty rows
-            const option = document.createElement("option");
-            option.value = player.PLAYER_NAME;
-            option.text = `${player.PLAYER_NAME} (${player.TEAM_ABBREVIATION})`;
-            select.appendChild(option);
-        }
-    });
-}
-
-// 3. Listen for changes in the dropdown menu
-document.getElementById("playerSelect").addEventListener("change", function(event) {
-    const selectedPlayer = event.target.value;
-    updateChart(selectedPlayer);
+document.addEventListener("DOMContentLoaded", () => {
+  Papa.parse("transformed_player_metrics.csv", {
+    download: true,
+    header: true,
+    dynamicTyping: true,
+    complete: (results) => {
+      globalData = results.data.filter(row => row.PLAYER_NAME && row.TEAM_ABBREVIATION);
+      initTeams();
+      setupEventListeners();
+      updateDashboard();
+    }
+  });
 });
 
-// 4. Update the Radar Chart with selected player data
-function updateChart(playerName) {
-    // Find the data for the selected player
-    const player = playerData.find(p => p.PLAYER_NAME === playerName);
-    if (!player) return; // Exit if no player found
+function initTeams() {
+  const teams = [...new Set(globalData.map(d => d.TEAM_ABBREVIATION))].sort();
+  
+  const team1Select = document.getElementById("team1-select");
+  const team2Select = document.getElementById("team2-select");
 
-    // Extract the numeric values for the metrics we want to plot
-    const chartData = metrics.map(metric => parseFloat(player[metric]));
+  // Populate team dropdowns
+  teams.forEach(team => {
+    team1Select.add(new Option(team, team));
+    team2Select.add(new Option(team, team));
+  });
 
-    // Update or Create the Chart
-    const ctx = document.getElementById('impactChart').getContext('2d');
+  // Default initial teams (e.g., GSW vs LAL if present, otherwise first two)
+  if (teams.includes("GSW")) team1Select.value = "GSW";
+  if (teams.includes("LAL")) team2Select.value = "LAL";
 
-    // If chart exists, destroy it before creating a new one
-    if (myChart) {
-        myChart.destroy();
-    }
-
-    myChart = new Chart(ctx, {
-        type: 'radar',
-        data: {
-            labels: ['Pts/Game', 'Min/Game', 'True Shooting %', 'Eff. FG %', '3Pt Rate %'],
-            datasets: [{
-                label: player.PLAYER_NAME,
-                data: chartData,
-                backgroundColor: 'rgba(56, 189, 248, 0.2)', // Light Blue (accent color)
-                borderColor: 'rgba(56, 189, 248, 1)',
-                borderWidth: 2,
-                pointBackgroundColor: '#fff',
-                pointBorderColor: 'rgba(56, 189, 248, 1)'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                r: {
-                    angleLines: { color: '#334155' },
-                    grid: { color: '#334155' },
-                    ticks: { display: false }, // Hide the numbers on the spider lines
-                    suggestedMin: 0,
-                    suggestedMax: 100 // Adjust based on data ranges
-                }
-            },
-            plugins: {
-                legend: { labels: { color: '#f8fafc' } } // Primary Text color
-            }
-        }
-    });
+  // Populate player dropdowns based on initial teams
+  updatePlayerDropdown(1);
+  updatePlayerDropdown(2);
 }
 
-// Start the whole process
-loadData();
+function updatePlayerDropdown(playerNum) {
+  const teamVal = document.getElementById(`team${playerNum}-select`).value;
+  const playerSelect = document.getElementById(`player${playerNum}-select`);
+
+  // Filter dataset by selected team
+  const filteredPlayers = globalData
+    .filter(d => d.TEAM_ABBREVIATION === teamVal)
+    .map(d => d.PLAYER_NAME)
+    .sort();
+
+  playerSelect.innerHTML = "";
+  filteredPlayers.forEach(name => {
+    playerSelect.add(new Option(name, name));
+  });
+}
+
+function setupEventListeners() {
+  // Team 1 Change -> update Player 1 dropdown -> refresh chart
+  document.getElementById("team1-select").addEventListener("change", () => {
+    updatePlayerDropdown(1);
+    updateDashboard();
+  });
+
+  // Team 2 Change -> update Player 2 dropdown -> refresh chart
+  document.getElementById("team2-select").addEventListener("change", () => {
+    updatePlayerDropdown(2);
+    updateDashboard();
+  });
+
+  // Player selections change -> refresh chart
+  document.getElementById("player1-select").addEventListener("change", updateDashboard);
+  document.getElementById("player2-select").addEventListener("change", updateDashboard);
+}
+
+function updateDashboard() {
+  const p1Name = document.getElementById("player1-select").value;
+  const p2Name = document.getElementById("player2-select").value;
+
+  const player1 = globalData.find(d => d.PLAYER_NAME === p1Name);
+  const player2 = globalData.find(d => d.PLAYER_NAME === p2Name);
+
+  if (player1 && player2) {
+    renderRadarChart(player1, player2);
+  }
+}
+
+function renderRadarChart(p1, p2) {
+  const ctx = document.getElementById("radarChart").getContext("2d");
+
+  const labels = ["Points (PTS)", "Rebounds (REB)", "Assists (AST)", "Steals (STL)", "Blocks (BLK)", "True Shooting % (TS%)"];
+
+  const p1Metrics = [p1.PTS || 0, p1.REB || 0, p1.AST || 0, p1.STL || 0, p1.BLK || 0, (p1.TS_PCT || 0) * 100];
+  const p2Metrics = [p2.PTS || 0, p2.REB || 0, p2.AST || 0, p2.STL || 0, p2.BLK || 0, (p2.TS_PCT || 0) * 100];
+
+  if (radarChart) {
+    radarChart.destroy();
+  }
+
+  radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: `${p1.PLAYER_NAME} (${p1.TEAM_ABBREVIATION})`,
+          data: p1Metrics,
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 2
+        },
+        {
+          label: `${p2.PLAYER_NAME} (${p2.TEAM_ABBREVIATION})`,
+          data: p2Metrics,
+          backgroundColor: 'rgba(255, 99, 132, 0.2)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+          grid: { color: 'rgba(255, 255, 255, 0.2)' },
+          pointLabels: { color: '#ffffff', font: { size: 12 } },
+          ticks: { backdropColor: 'transparent', color: '#aaaaaa' }
+        }
+      },
+      plugins: {
+        legend: { labels: { color: '#ffffff', font: { size: 14 } } }
+      }
+    }
+  });
+}
