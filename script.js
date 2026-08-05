@@ -6,8 +6,37 @@ document.addEventListener("DOMContentLoaded", () => {
     download: true,
     header: true,
     dynamicTyping: true,
+    skipEmptyLines: true,
     complete: (results) => {
-      globalData = results.data.filter(row => row.PLAYER_NAME && row.TEAM_ABBREVIATION);
+      if (!results.data || results.data.length === 0) {
+        console.error("CSV empty or failed to parse");
+        return;
+      }
+
+      // Normalize keys to find player name and team columns regardless of casing
+      globalData = results.data.map(row => {
+        const keys = Object.keys(row);
+        const playerKey = keys.find(k => k.toLowerCase().includes("player") || k.toLowerCase().includes("name"));
+        const teamKey = keys.find(k => k.toLowerCase().includes("team") || k.toLowerCase().includes("abbreviation"));
+        const ptsKey = keys.find(k => k.toUpperCase() === "PTS" || k.toLowerCase().includes("pts"));
+        const rebKey = keys.find(k => k.toUpperCase() === "REB" || k.toLowerCase().includes("reb"));
+        const astKey = keys.find(k => k.toUpperCase() === "AST" || k.toLowerCase().includes("ast"));
+        const stlKey = keys.find(k => k.toUpperCase() === "STL" || k.toLowerCase().includes("stl"));
+        const blkKey = keys.find(k => k.toUpperCase() === "BLK" || k.toLowerCase().includes("blk"));
+        const tsKey = keys.find(k => k.toLowerCase().includes("ts") || k.toLowerCase().includes("true"));
+
+        return {
+          PLAYER_NAME: row[playerKey],
+          TEAM_ABBREVIATION: row[teamKey] || "NBA",
+          PTS: row[ptsKey] || 0,
+          REB: row[rebKey] || 0,
+          AST: row[astKey] || 0,
+          STL: row[stlKey] || 0,
+          BLK: row[blkKey] || 0,
+          TS_PCT: row[tsKey] || 0
+        };
+      }).filter(d => d.PLAYER_NAME);
+
       initTeams();
       setupEventListeners();
       updateDashboard();
@@ -21,17 +50,19 @@ function initTeams() {
   const team1Select = document.getElementById("team1-select");
   const team2Select = document.getElementById("team2-select");
 
-  // Populate team dropdowns
+  team1Select.innerHTML = "";
+  team2Select.innerHTML = "";
+
   teams.forEach(team => {
     team1Select.add(new Option(team, team));
     team2Select.add(new Option(team, team));
   });
 
-  // Default initial teams (e.g., GSW vs LAL if present, otherwise first two)
-  if (teams.includes("GSW")) team1Select.value = "GSW";
-  if (teams.includes("LAL")) team2Select.value = "LAL";
+  if (teams.length > 0) {
+    team1Select.selectedIndex = 0;
+    team2Select.selectedIndex = teams.length > 1 ? 1 : 0;
+  }
 
-  // Populate player dropdowns based on initial teams
   updatePlayerDropdown(1);
   updatePlayerDropdown(2);
 }
@@ -40,7 +71,6 @@ function updatePlayerDropdown(playerNum) {
   const teamVal = document.getElementById(`team${playerNum}-select`).value;
   const playerSelect = document.getElementById(`player${playerNum}-select`);
 
-  // Filter dataset by selected team
   const filteredPlayers = globalData
     .filter(d => d.TEAM_ABBREVIATION === teamVal)
     .map(d => d.PLAYER_NAME)
@@ -53,19 +83,16 @@ function updatePlayerDropdown(playerNum) {
 }
 
 function setupEventListeners() {
-  // Team 1 Change -> update Player 1 dropdown -> refresh chart
   document.getElementById("team1-select").addEventListener("change", () => {
     updatePlayerDropdown(1);
     updateDashboard();
   });
 
-  // Team 2 Change -> update Player 2 dropdown -> refresh chart
   document.getElementById("team2-select").addEventListener("change", () => {
     updatePlayerDropdown(2);
     updateDashboard();
   });
 
-  // Player selections change -> refresh chart
   document.getElementById("player1-select").addEventListener("change", updateDashboard);
   document.getElementById("player2-select").addEventListener("change", updateDashboard);
 }
@@ -87,8 +114,8 @@ function renderRadarChart(p1, p2) {
 
   const labels = ["Points (PTS)", "Rebounds (REB)", "Assists (AST)", "Steals (STL)", "Blocks (BLK)", "True Shooting % (TS%)"];
 
-  const p1Metrics = [p1.PTS || 0, p1.REB || 0, p1.AST || 0, p1.STL || 0, p1.BLK || 0, (p1.TS_PCT || 0) * 100];
-  const p2Metrics = [p2.PTS || 0, p2.REB || 0, p2.AST || 0, p2.STL || 0, p2.BLK || 0, (p2.TS_PCT || 0) * 100];
+  const p1Metrics = [p1.PTS, p1.REB, p1.AST, p1.STL, p1.BLK, (p1.TS_PCT > 1 ? p1.TS_PCT : p1.TS_PCT * 100)];
+  const p2Metrics = [p2.PTS, p2.REB, p2.AST, p2.STL, p2.BLK, (p2.TS_PCT > 1 ? p2.TS_PCT : p2.TS_PCT * 100)];
 
   if (radarChart) {
     radarChart.destroy();
