@@ -8,12 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
     dynamicTyping: true,
     skipEmptyLines: true,
     complete: (results) => {
-      if (!results.data || results.data.length === 0) {
-        console.error("CSV empty or failed to parse");
-        return;
-      }
+      if (!results.data || results.data.length === 0) return;
 
-      // Normalize keys to find player name and team columns regardless of casing
       globalData = results.data.map(row => {
         const keys = Object.keys(row);
         const playerKey = keys.find(k => k.toLowerCase().includes("player") || k.toLowerCase().includes("name"));
@@ -28,15 +24,16 @@ document.addEventListener("DOMContentLoaded", () => {
         return {
           PLAYER_NAME: row[playerKey],
           TEAM_ABBREVIATION: row[teamKey] || "NBA",
-          PTS: row[ptsKey] || 0,
-          REB: row[rebKey] || 0,
-          AST: row[astKey] || 0,
-          STL: row[stlKey] || 0,
-          BLK: row[blkKey] || 0,
-          TS_PCT: row[tsKey] || 0
+          PTS: Number(row[ptsKey] || 0),
+          REB: Number(row[rebKey] || 0),
+          AST: Number(row[astKey] || 0),
+          STL: Number(row[stlKey] || 0),
+          BLK: Number(row[blkKey] || 0),
+          TS_PCT: Number(row[tsKey] || 0)
         };
       }).filter(d => d.PLAYER_NAME);
 
+      calculatePercentiles();
       initTeams();
       setupEventListeners();
       updateDashboard();
@@ -44,9 +41,22 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// Calculates 0-100 percentile rank for every metric across the dataset
+function calculatePercentiles() {
+  const metrics = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TS_PCT'];
+  const total = globalData.length;
+
+  metrics.forEach(metric => {
+    const sorted = [...globalData].map(d => d[metric]).sort((a, b) => a - b);
+    globalData.forEach(player => {
+      const rank = sorted.filter(v => v <= player[metric]).length;
+      player[`${metric}_pct`] = Math.round((rank / total) * 100);
+    });
+  });
+}
+
 function initTeams() {
   const teams = [...new Set(globalData.map(d => d.TEAM_ABBREVIATION))].sort();
-  
   const team1Select = document.getElementById("team1-select");
   const team2Select = document.getElementById("team2-select");
 
@@ -106,16 +116,46 @@ function updateDashboard() {
 
   if (player1 && player2) {
     renderRadarChart(player1, player2);
+    renderStatCards(player1, player2);
   }
+}
+
+function renderStatCards(p1, p2) {
+  const statsContainer = document.getElementById("stats-grid");
+  const metrics = [
+    { label: "Points (PTS)", key: "PTS", format: v => v.toFixed(1) },
+    { label: "Rebounds (REB)", key: "REB", format: v => v.toFixed(1) },
+    { label: "Assists (AST)", key: "AST", format: v => v.toFixed(1) },
+    { label: "Steals (STL)", key: "STL", format: v => v.toFixed(1) },
+    { label: "Blocks (BLK)", key: "BLK", format: v => v.toFixed(1) },
+    { label: "True Shooting %", key: "TS_PCT", format: v => (v > 1 ? v : v * 100).toFixed(1) + "%" }
+  ];
+
+  statsContainer.innerHTML = metrics.map(m => {
+    const v1 = p1[m.key];
+    const v2 = p2[m.key];
+    const p1Leader = v1 > v2 ? "leader-p1" : "";
+    const p2Leader = v2 > v1 ? "leader-p2" : "";
+
+    return `
+      
+        ${m.label}
+        
+          ${m.format(v1)}
+          |
+          ${m.format(v2)}
+        
+      
+    `;
+  }).join("");
 }
 
 function renderRadarChart(p1, p2) {
   const ctx = document.getElementById("radarChart").getContext("2d");
+  const labels = ["Points", "Rebounds", "Assists", "Steals", "Blocks", "Efficiency (TS%)"];
 
-  const labels = ["Points (PTS)", "Rebounds (REB)", "Assists (AST)", "Steals (STL)", "Blocks (BLK)", "True Shooting % (TS%)"];
-
-  const p1Metrics = [p1.PTS, p1.REB, p1.AST, p1.STL, p1.BLK, (p1.TS_PCT > 1 ? p1.TS_PCT : p1.TS_PCT * 100)];
-  const p2Metrics = [p2.PTS, p2.REB, p2.AST, p2.STL, p2.BLK, (p2.TS_PCT > 1 ? p2.TS_PCT : p2.TS_PCT * 100)];
+  const p1Percentiles = [p1.PTS_pct, p1.REB_pct, p1.AST_pct, p1.STL_pct, p1.BLK_pct, p1.TS_PCT_pct];
+  const p2Percentiles = [p2.PTS_pct, p2.REB_pct, p2.AST_pct, p2.STL_pct, p2.BLK_pct, p2.TS_PCT_pct];
 
   if (radarChart) {
     radarChart.destroy();
@@ -127,19 +167,23 @@ function renderRadarChart(p1, p2) {
       labels: labels,
       datasets: [
         {
-          label: `${p1.PLAYER_NAME} (${p1.TEAM_ABBREVIATION})`,
-          data: p1Metrics,
-          backgroundColor: 'rgba(54, 162, 235, 0.2)',
-          borderColor: 'rgba(54, 162, 235, 1)',
-          pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+          label: p1.PLAYER_NAME,
+          data: p1Percentiles,
+          rawStats: [p1.PTS, p1.REB, p1.AST, p1.STL, p1.BLK, p1.TS_PCT],
+          backgroundColor: 'rgba(56, 189, 248, 0.2)',
+          borderColor: '#38bdf8',
+          pointBackgroundColor: '#38bdf8',
+          pointBorderColor: '#fff',
           borderWidth: 2
         },
         {
-          label: `${p2.PLAYER_NAME} (${p2.TEAM_ABBREVIATION})`,
-          data: p2Metrics,
-          backgroundColor: 'rgba(255, 99, 132, 0.2)',
-          borderColor: 'rgba(255, 99, 132, 1)',
-          pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+          label: p2.PLAYER_NAME,
+          data: p2Percentiles,
+          rawStats: [p2.PTS, p2.REB, p2.AST, p2.STL, p2.BLK, p2.TS_PCT],
+          backgroundColor: 'rgba(244, 63, 94, 0.2)',
+          borderColor: '#f43f5e',
+          pointBackgroundColor: '#f43f5e',
+          pointBorderColor: '#fff',
           borderWidth: 2
         }
       ]
@@ -149,14 +193,29 @@ function renderRadarChart(p1, p2) {
       maintainAspectRatio: false,
       scales: {
         r: {
-          angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
-          grid: { color: 'rgba(255, 255, 255, 0.2)' },
-          pointLabels: { color: '#ffffff', font: { size: 12 } },
-          ticks: { backdropColor: 'transparent', color: '#aaaaaa' }
+          min: 0,
+          max: 100,
+          ticks: { stepSize: 20, display: false },
+          angleLines: { color: 'rgba(255, 255, 255, 0.08)' },
+          grid: { color: 'rgba(255, 255, 255, 0.08)' },
+          pointLabels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } }
         }
       },
       plugins: {
-        legend: { labels: { color: '#ffffff', font: { size: 14 } } }
+        legend: {
+          labels: { color: '#f8fafc', font: { family: 'Plus Jakarta Sans', size: 13, weight: '600' } }
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const pct = context.raw;
+              const idx = context.dataIndex;
+              const rawVal = context.dataset.rawStats[idx];
+              const formattedRaw = idx === 5 ? (rawVal > 1 ? rawVal.toFixed(1) : (rawVal * 100).toFixed(1)) + '%' : rawVal.toFixed(1);
+              return `${context.dataset.label}: ${pct}th percentile (${formattedRaw})`;
+            }
+          }
+        }
       }
     }
   });
