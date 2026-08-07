@@ -20,6 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const stlKey = keys.find(k => k.toUpperCase() === "STL" || k.toLowerCase().includes("stl"));
         const blkKey = keys.find(k => k.toUpperCase() === "BLK" || k.toLowerCase().includes("blk"));
         const tsKey = keys.find(k => k.toLowerCase().includes("ts") || k.toLowerCase().includes("true"));
+        const minKey = keys.find(k => k.toLowerCase().includes("min"));
+        const usgKey = keys.find(k => k.toLowerCase().includes("usg") || k.toLowerCase().includes("usage"));
+        const tovKey = keys.find(k => k.toLowerCase().includes("tov") || k.toLowerCase().includes("turnover"));
 
         return {
           PLAYER_NAME: row[playerKey],
@@ -29,7 +32,10 @@ document.addEventListener("DOMContentLoaded", () => {
           AST: Number(row[astKey] || 0),
           STL: Number(row[stlKey] || 0),
           BLK: Number(row[blkKey] || 0),
-          TS_PCT: Number(row[tsKey] || 0)
+          TS_PCT: Number(row[tsKey] || 0),
+          MIN: Number(row[minKey] || 0),
+          USG_PCT: Number(row[usgKey] || 0),
+          TOV: Number(row[tovKey] || 0)
         };
       }).filter(d => d.PLAYER_NAME);
 
@@ -41,7 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Calculates 0-100 percentile rank for every metric across the dataset
 function calculatePercentiles() {
   const metrics = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TS_PCT'];
   const total = globalData.length;
@@ -116,43 +121,71 @@ function updateDashboard() {
 
   if (player1 && player2) {
     renderRadarChart(player1, player2);
-    renderStatCards(player1, player2);
+    renderPlayerCards(player1, player2);
   }
 }
 
-function renderStatCards(p1, p2) {
-  const statsContainer = document.getElementById("stats-grid");
+function renderPlayerCards(p1, p2) {
+  document.getElementById("p1-card-name").innerText = p1.PLAYER_NAME;
+  document.getElementById("p1-card-team").innerText = p1.TEAM_ABBREVIATION;
+  
+  document.getElementById("p2-card-name").innerText = p2.PLAYER_NAME;
+  document.getElementById("p2-card-team").innerText = p2.TEAM_ABBREVIATION;
+
   const metrics = [
-    { label: "Points (PTS)", key: "PTS", format: v => v.toFixed(1) },
-    { label: "Rebounds (REB)", key: "REB", format: v => v.toFixed(1) },
-    { label: "Assists (AST)", key: "AST", format: v => v.toFixed(1) },
-    { label: "Steals (STL)", key: "STL", format: v => v.toFixed(1) },
-    { label: "Blocks (BLK)", key: "BLK", format: v => v.toFixed(1) },
-    { label: "True Shooting %", key: "TS_PCT", format: v => (v > 1 ? v : v * 100).toFixed(1) + "%" }
+    { label: "Points/Game", key: "PTS", fmt: v => v.toFixed(1), higherBetter: true },
+    { label: "Rebounds/Game", key: "REB", fmt: v => v.toFixed(1), higherBetter: true },
+    { label: "Assists/Game", key: "AST", fmt: v => v.toFixed(1), higherBetter: true },
+    { label: "Steals/Game", key: "STL", fmt: v => v.toFixed(1), higherBetter: true },
+    { label: "Blocks/Game", key: "BLK", fmt: v => v.toFixed(1), higherBetter: true },
+    { label: "True Shooting %", key: "TS_PCT", fmt: v => (v > 1 ? v : v * 100).toFixed(1) + "%", higherBetter: true },
+    { label: "Minutes/Game", key: "MIN", fmt: v => v ? v.toFixed(1) : "N/A", higherBetter: true },
+    { label: "Usage Rate %", key: "USG_PCT", fmt: v => v ? (v > 1 ? v : v * 100).toFixed(1) + "%" : "N/A", higherBetter: true },
+    { label: "Turnovers/Game", key: "TOV", fmt: v => v ? v.toFixed(1) : "N/A", higherBetter: false }
   ];
 
-  statsContainer.innerHTML = metrics.map(m => {
+  const p1List = document.getElementById("p1-stats-list");
+  const p2List = document.getElementById("p2-stats-list");
+
+  p1List.innerHTML = "";
+  p2List.innerHTML = "";
+
+  metrics.forEach(m => {
     const v1 = p1[m.key];
     const v2 = p2[m.key];
-    const p1Leader = v1 > v2 ? "leader-p1" : "";
-    const p2Leader = v2 > v1 ? "leader-p2" : "";
 
-    return `
-      
-        ${m.label}
-        
-          ${m.format(v1)}
-          |
-          ${m.format(v2)}
-        
-      
+    let p1IsLeader = false;
+    let p2IsLeader = false;
+
+    if (v1 !== undefined && v2 !== undefined && v1 !== v2) {
+      if (m.higherBetter) {
+        p1IsLeader = v1 > v2;
+        p2IsLeader = v2 > v1;
+      } else {
+        p1IsLeader = v1 < v2;
+        p2IsLeader = v2 < v1;
+      }
+    }
+
+    p1List.innerHTML += `
+      <div class="stat-box">
+        <span class="stat-title">${m.label}</span>
+        <span class="stat-val ${p1IsLeader ? 'leader' : ''}">${m.fmt(v1)}</span>
+      </div>
     `;
-  }).join("");
+
+    p2List.innerHTML += `
+      <div class="stat-box">
+        <span class="stat-title">${m.label}</span>
+        <span class="stat-val ${p2IsLeader ? 'leader' : ''}">${m.fmt(v2)}</span>
+      </div>
+    `;
+  });
 }
 
 function renderRadarChart(p1, p2) {
   const ctx = document.getElementById("radarChart").getContext("2d");
-  const labels = ["Points", "Rebounds", "Assists", "Steals", "Blocks", "Efficiency (TS%)"];
+  const labels = ["Points", "Rebounds", "Assists", "Steals", "Blocks", "Efficiency"];
 
   const p1Percentiles = [p1.PTS_pct, p1.REB_pct, p1.AST_pct, p1.STL_pct, p1.BLK_pct, p1.TS_PCT_pct];
   const p2Percentiles = [p2.PTS_pct, p2.REB_pct, p2.AST_pct, p2.STL_pct, p2.BLK_pct, p2.TS_PCT_pct];
@@ -191,6 +224,14 @@ function renderRadarChart(p1, p2) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 10,
+          bottom: 10,
+          left: 10,
+          right: 10
+        }
+      },
       scales: {
         r: {
           min: 0,
@@ -198,12 +239,21 @@ function renderRadarChart(p1, p2) {
           ticks: { stepSize: 20, display: false },
           angleLines: { color: 'rgba(255, 255, 255, 0.08)' },
           grid: { color: 'rgba(255, 255, 255, 0.08)' },
-          pointLabels: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } }
+          pointLabels: { 
+            color: '#94a3b8', 
+            font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' } 
+          }
         }
       },
       plugins: {
         legend: {
-          labels: { color: '#f8fafc', font: { family: 'Plus Jakarta Sans', size: 13, weight: '600' } }
+          position: 'top',
+          labels: { 
+            color: '#f8fafc', 
+            font: { family: 'Plus Jakarta Sans', size: 12, weight: '600' },
+            boxWidth: 12,
+            padding: 15
+          }
         },
         tooltip: {
           callbacks: {
