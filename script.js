@@ -68,6 +68,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+complete: (results) => {
+  if (!results.data || results.data.length === 0) return;
+
+  // DEBUG: Print the raw column names and first row onto the screen
+  const debugDiv = document.createElement("div");
+  debugDiv.style.cssText = "color: #00ff00; background: #000; padding: 20px; font-family: monospace; white-space: pre-wrap; word-break: break-all; z-index: 9999; position: relative;";
+  debugDiv.innerText = "CSV HEADERS:\n" + JSON.stringify(Object.keys(results.data[0])) + "\n\nFIRST ROW DATA:\n" + JSON.stringify(results.data[0], null, 2);
+  document.body.prepend(debugDiv);
+
+  // ... rest of your code ...
 
 function calculatePercentiles() {
   const metrics = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TS_PCT'];
