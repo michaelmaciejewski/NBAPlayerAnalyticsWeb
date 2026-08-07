@@ -28,17 +28,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
       globalData = results.data.map(row => {
         const keys = Object.keys(row);
-        const playerKey = keys.find(k => k.toLowerCase().includes("player") || k.toLowerCase().includes("name"));
-        const teamKey = keys.find(k => k.toLowerCase().includes("team") || k.toLowerCase().includes("abbreviation"));
-        const ptsKey = keys.find(k => k.toUpperCase() === "PTS" || k.toLowerCase().includes("pts"));
-        const rebKey = keys.find(k => k.toUpperCase() === "REB" || k.toLowerCase().includes("reb"));
-        const astKey = keys.find(k => k.toUpperCase() === "AST" || k.toLowerCase().includes("ast"));
-        const stlKey = keys.find(k => k.toUpperCase() === "STL" || k.toLowerCase().includes("stl"));
-        const blkKey = keys.find(k => k.toUpperCase() === "BLK" || k.toLowerCase().includes("blk"));
-        const tsKey = keys.find(k => k.toLowerCase().includes("ts") || k.toLowerCase().includes("true"));
-        const minKey = keys.find(k => k.toLowerCase().includes("min"));
-        const usgKey = keys.find(k => k.toLowerCase().includes("usg") || k.toLowerCase().includes("usage"));
-        const tovKey = keys.find(k => k.toLowerCase().includes("tov") || k.toLowerCase().includes("turnover"));
+
+        // Helper function to dynamically match column variations & trims
+        const findKey = (patterns) => keys.find(k => 
+          patterns.some(p => k.trim().toLowerCase() === p.toLowerCase() || k.trim().toLowerCase().includes(p.toLowerCase()))
+        );
+
+        const playerKey = findKey(["player_name", "player", "name"]);
+        const teamKey = findKey(["team_abbreviation", "team", "abbr"]);
+        const ptsKey = findKey(["pts", "points", "pts_per_game"]);
+        const rebKey = findKey(["reb", "rebounds", "reb_per_game", "trb"]);
+        const astKey = findKey(["ast", "assists", "ast_per_game"]);
+        const stlKey = findKey(["stl", "steals", "stl_per_game"]);
+        const blkKey = findKey(["blk", "blocks", "blk_per_game"]);
+        const tsKey = findKey(["ts_pct", "ts%", "ts", "true_shooting"]);
+        const minKey = findKey(["min", "minutes", "min_per_game"]);
+        const usgKey = findKey(["usg_pct", "usg%", "usg", "usage"]);
+        const tovKey = findKey(["tov", "turnovers", "tov_per_game"]);
 
         return {
           PLAYER_NAME: row[playerKey],
@@ -50,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
           BLK: Number(row[blkKey] || 0),
           TS_PCT: Number(row[tsKey] || 0),
           MIN: Number(row[minKey] || 0),
-          USG_PCT: Number(row[usgKey] || 0),
+          USG_PCT: row[usgKey] !== undefined && row[usgKey] !== null ? Number(row[usgKey]) : null,
           TOV: Number(row[tovKey] || 0)
         };
       }).filter(d => d.PLAYER_NAME);
@@ -164,9 +170,9 @@ function renderPlayerCards(p1, p2) {
     { label: "Steals/Game", key: "STL", fmt: v => v.toFixed(1), higherBetter: true },
     { label: "Blocks/Game", key: "BLK", fmt: v => v.toFixed(1), higherBetter: true },
     { label: "True Shooting %", key: "TS_PCT", fmt: v => (v > 1 ? v : v * 100).toFixed(1) + "%", higherBetter: true },
-    { label: "Minutes/Game", key: "MIN", fmt: v => v ? v.toFixed(1) : "N/A", higherBetter: true },
-    { label: "Usage Rate %", key: "USG_PCT", fmt: v => v ? (v > 1 ? v : v * 100).toFixed(1) + "%" : "N/A", higherBetter: true },
-    { label: "Turnovers/Game", key: "TOV", fmt: v => v ? v.toFixed(1) : "N/A", higherBetter: false }
+    { label: "Minutes/Game", key: "MIN", fmt: v => (v !== null && v >= 0) ? v.toFixed(1) : "N/A", higherBetter: true },
+    { label: "Usage Rate %", key: "USG_PCT", fmt: v => (v !== null && !isNaN(v)) ? (v > 1 ? v : v * 100).toFixed(1) + "%" : "N/A", higherBetter: true },
+    { label: "Turnovers/Game", key: "TOV", fmt: v => (v !== null && v >= 0) ? v.toFixed(1) : "N/A", higherBetter: false }
   ];
 
   const p1List = document.getElementById("p1-stats-list");
@@ -182,7 +188,7 @@ function renderPlayerCards(p1, p2) {
     let p1IsLeader = false;
     let p2IsLeader = false;
 
-    if (v1 !== undefined && v2 !== undefined && v1 !== v2) {
+    if (v1 !== undefined && v2 !== undefined && v1 !== v2 && v1 !== null && v2 !== null) {
       if (m.higherBetter) {
         p1IsLeader = v1 > v2;
         p2IsLeader = v2 > v1;
