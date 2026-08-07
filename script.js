@@ -29,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
       globalData = results.data.map(row => {
         const keys = Object.keys(row);
 
-        // Helper function to dynamically match column variations & trims
         const findKey = (patterns) => keys.find(k => 
           patterns.some(p => k.trim().toLowerCase() === p.toLowerCase() || k.trim().toLowerCase().includes(p.toLowerCase()))
         );
@@ -68,20 +67,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-complete: (results) => {
-  if (!results.data || results.data.length === 0) return;
-
-  // DEBUG: Print the raw column names and first row onto the screen
-  const debugDiv = document.createElement("div");
-  debugDiv.style.cssText = "color: #00ff00; background: #000; padding: 20px; font-family: monospace; white-space: pre-wrap; word-break: break-all; z-index: 9999; position: relative;";
-  debugDiv.innerText = "CSV HEADERS:\n" + JSON.stringify(Object.keys(results.data[0])) + "\n\nFIRST ROW DATA:\n" + JSON.stringify(results.data[0], null, 2);
-  document.body.prepend(debugDiv);
-
-  // ... rest of your code ...
 
 function calculatePercentiles() {
   const metrics = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TS_PCT'];
   const total = globalData.length;
+  if (total === 0) return;
 
   metrics.forEach(metric => {
     const sorted = [...globalData].map(d => d[metric]).sort((a, b) => a - b);
@@ -96,6 +86,8 @@ function initTeams() {
   const teams = [...new Set(globalData.map(d => d.TEAM_ABBREVIATION))].sort();
   const team1Select = document.getElementById("team1-select");
   const team2Select = document.getElementById("team2-select");
+
+  if (!team1Select || !team2Select) return;
 
   team1Select.innerHTML = "";
   team2Select.innerHTML = "";
@@ -115,9 +107,11 @@ function initTeams() {
 }
 
 function updatePlayerDropdown(playerNum) {
-  const teamVal = document.getElementById(`team${playerNum}-select`).value;
+  const teamElem = document.getElementById(`team${playerNum}-select`);
   const playerSelect = document.getElementById(`player${playerNum}-select`);
+  if (!teamElem || !playerSelect) return;
 
+  const teamVal = teamElem.value;
   const filteredPlayers = globalData
     .filter(d => d.TEAM_ABBREVIATION === teamVal)
     .map(d => d.PLAYER_NAME)
@@ -130,23 +124,24 @@ function updatePlayerDropdown(playerNum) {
 }
 
 function setupEventListeners() {
-  document.getElementById("team1-select").addEventListener("change", () => {
-    updatePlayerDropdown(1);
-    updateDashboard();
-  });
+  const t1 = document.getElementById("team1-select");
+  const t2 = document.getElementById("team2-select");
+  const p1 = document.getElementById("player1-select");
+  const p2 = document.getElementById("player2-select");
 
-  document.getElementById("team2-select").addEventListener("change", () => {
-    updatePlayerDropdown(2);
-    updateDashboard();
-  });
-
-  document.getElementById("player1-select").addEventListener("change", updateDashboard);
-  document.getElementById("player2-select").addEventListener("change", updateDashboard);
+  if (t1) t1.addEventListener("change", () => { updatePlayerDropdown(1); updateDashboard(); });
+  if (t2) t2.addEventListener("change", () => { updatePlayerDropdown(2); updateDashboard(); });
+  if (p1) p1.addEventListener("change", updateDashboard);
+  if (p2) p2.addEventListener("change", updateDashboard);
 }
 
 function updateDashboard() {
-  const p1Name = document.getElementById("player1-select").value;
-  const p2Name = document.getElementById("player2-select").value;
+  const p1Elem = document.getElementById("player1-select");
+  const p2Elem = document.getElementById("player2-select");
+  if (!p1Elem || !p2Elem) return;
+
+  const p1Name = p1Elem.value;
+  const p2Name = p2Elem.value;
 
   const player1 = globalData.find(d => d.PLAYER_NAME === p1Name);
   const player2 = globalData.find(d => d.PLAYER_NAME === p2Name);
@@ -161,17 +156,18 @@ function renderPlayerCards(p1, p2) {
   const logo1 = getTeamLogoUrl(p1.TEAM_ABBREVIATION);
   const logo2 = getTeamLogoUrl(p2.TEAM_ABBREVIATION);
 
-  document.getElementById("p1-control-logo").src = logo1;
-  document.getElementById("p2-control-logo").src = logo2;
+  const setSrc = (id, src) => { const el = document.getElementById(id); if (el) el.src = src; };
+  const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.innerText = txt; };
 
-  document.getElementById("p1-card-logo").src = logo1;
-  document.getElementById("p2-card-logo").src = logo2;
+  setSrc("p1-control-logo", logo1);
+  setSrc("p2-control-logo", logo2);
+  setSrc("p1-card-logo", logo1);
+  setSrc("p2-card-logo", logo2);
 
-  document.getElementById("p1-card-name").innerText = p1.PLAYER_NAME;
-  document.getElementById("p1-card-team").innerText = p1.TEAM_ABBREVIATION;
-  
-  document.getElementById("p2-card-name").innerText = p2.PLAYER_NAME;
-  document.getElementById("p2-card-team").innerText = p2.TEAM_ABBREVIATION;
+  setText("p1-card-name", p1.PLAYER_NAME);
+  setText("p1-card-team", p1.TEAM_ABBREVIATION);
+  setText("p2-card-name", p2.PLAYER_NAME);
+  setText("p2-card-team", p2.TEAM_ABBREVIATION);
 
   const metrics = [
     { label: "Points/Game", key: "PTS", fmt: v => v.toFixed(1), higherBetter: true },
@@ -188,8 +184,8 @@ function renderPlayerCards(p1, p2) {
   const p1List = document.getElementById("p1-stats-list");
   const p2List = document.getElementById("p2-stats-list");
 
-  p1List.innerHTML = "";
-  p2List.innerHTML = "";
+  if (p1List) p1List.innerHTML = "";
+  if (p2List) p2List.innerHTML = "";
 
   metrics.forEach(m => {
     const v1 = p1[m.key];
@@ -208,28 +204,36 @@ function renderPlayerCards(p1, p2) {
       }
     }
 
-    p1List.innerHTML += `
-      <div class="stat-box">
-        <span class="stat-title">${m.label}</span>
-        <span class="stat-val ${p1IsLeader ? 'leader' : ''}">${m.fmt(v1)}</span>
-      </div>
-    `;
+    if (p1List) {
+      p1List.innerHTML += `
+        <div class="stat-box">
+          <span class="stat-title">${m.label}</span>
+          <span class="stat-val ${p1IsLeader ? 'leader' : ''}">${m.fmt(v1)}</span>
+        </div>
+      `;
+    }
 
-    p2List.innerHTML += `
-      <div class="stat-box">
-        <span class="stat-title">${m.label}</span>
-        <span class="stat-val ${p2IsLeader ? 'leader' : ''}">${m.fmt(v2)}</span>
-      </div>
-    `;
+    if (p2List) {
+      p2List.innerHTML += `
+        <div class="stat-box">
+          <span class="stat-title">${m.label}</span>
+          <span class="stat-val ${p2IsLeader ? 'leader' : ''}">${m.fmt(v2)}</span>
+        </div>
+      `;
+    }
   });
 }
 
 function renderRadarChart(p1, p2) {
-  const ctx = document.getElementById("radarChart").getContext("2d");
+  const canvas = document.getElementById("radarChart");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
   const labels = ["Points", "Rebounds", "Assists", "Steals", "Blocks", "Efficiency"];
 
-  const p1Percentiles = [p1.PTS_pct, p1.REB_pct, p1.AST_pct, p1.STL_pct, p1.BLK_pct, p1.TS_PCT_pct];
-  const p2Percentiles = [p2.PTS_pct, p2.REB_pct, p2.AST_pct, p2.STL_pct, p2.BLK_pct, p2.TS_PCT_pct];
+  // Matches metric keys calculated in calculatePercentiles()
+  const p1Percentiles = [p1.PTS_pct || 0, p1.REB_pct || 0, p1.AST_pct || 0, p1.STL_pct || 0, p1.BLK_pct || 0, p1.TS_PCT_pct || 0];
+  const p2Percentiles = [p2.PTS_pct || 0, p2.REB_pct || 0, p2.AST_pct || 0, p2.STL_pct || 0, p2.BLK_pct || 0, p2.TS_PCT_pct || 0];
 
   if (radarChart) {
     radarChart.destroy();
@@ -265,14 +269,6 @@ function renderRadarChart(p1, p2) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 10,
-          bottom: 10,
-          left: 10,
-          right: 10
-        }
-      },
       scales: {
         r: {
           min: 0,
@@ -301,7 +297,7 @@ function renderRadarChart(p1, p2) {
             label: function(context) {
               const pct = context.raw;
               const idx = context.dataIndex;
-              const rawVal = context.dataset.rawStats[idx];
+              const rawVal = context.dataset.rawStats[idx] || 0;
               const formattedRaw = idx === 5 ? (rawVal > 1 ? rawVal.toFixed(1) : (rawVal * 100).toFixed(1)) + '%' : rawVal.toFixed(1);
               return `${context.dataset.label}: ${pct}th percentile (${formattedRaw})`;
             }
