@@ -87,17 +87,14 @@ header p {
 .player-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+.control-team-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
 }
-
-.p1-dot { background-color: #38bdf8; box-shadow: 0 0 8px #38bdf8; }
-.p2-dot { background-color: #f43f5e; box-shadow: 0 0 8px #f43f5e; }
 
 .player-header h3 {
   font-size: 1rem;
@@ -189,6 +186,20 @@ header p {
   margin-bottom: 1rem;
 }
 
+.player-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.card-team-logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .card-header h2 {
   font-size: 1.05rem;
   font-weight: 700;
@@ -196,7 +207,7 @@ header p {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 190px;
+  max-width: 160px;
 }
 
 .team-tag {
